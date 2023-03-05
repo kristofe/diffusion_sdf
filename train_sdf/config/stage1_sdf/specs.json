@@ -1,9 +1,9 @@
 {
     "Description" : "training joint SDF-VAE model for modulating SDFs on the couch dataset",
-    "DataSource" : "../datasets/shapenet_sem/processed/",
-    "GridSource" : "../datasets/shapenet_sem/processed/",
-    "TrainSplit" : "data/splits/debug.json",
-    "TestSplit" : "data/splits/debug.json",
+    "DataSource" : "../../datasets/shapenet_sem/processed/",
+    "GridSource" : "../../datasets/shapenet_sem/processed/",
+    "TrainSplit" : "data/splits/debug_train.json",
+    "TestSplit" : "data/splits/debug_test.json",
     
     "training_task": "modulation",
   
