@@ -99,6 +99,44 @@ class Trainer(object):
                         **diffusion_specs
                         ).to(device)
 
+        # consider clipping before backwards (hook accomplishes this)
+        # clip_value = .5
+        # for p in nn.parameters():
+        #     p.register_hook(lambda grad: torch.clamp(grad, -clip_value, clip_value))
+
+        def nan_hook(self, inp, output):
+            if not isinstance(output, tuple):
+                outputs = [output]
+            else:
+                outputs = output
+
+            # if not isinstance(inp, tuple):
+            #     inps = [inp]
+            # else:
+            #     inps = inp
+
+            # for i, inpz in enumerate(inps):
+            #     nan_mask = torch.isnan(inpz)
+            #     # zero_mask = torch.logical_not(torch.nonzero(inpz))
+            #     # finite_mask = torch.isfinite(inpz)
+            #     if nan_mask.any():
+            #         raise RuntimeError(f"In + {self.__class__.__name__} Found NAN in input {i} at indices: ", nan_mask.nonzero(), "where:", inpz[nan_mask.nonzero()[:, 0].unique(sorted=True)])
+            #     # if zero_mask.any():
+            #     #     raise RuntimeError(f"In + {self.__class__.__name__} Found zero in input {i} at indices: ", zero_mask.nonzero(), "where:", inpz[zero_mask.nonzero()[:, 0].unique(sorted=True)])
+            #     # if finite_mask.any():
+            #     #     raise RuntimeError(f"In + {self.__class__.__name__} Found nonfinite in input {i} at indices: ", finite_mask.nonzero(), "where:", inpz[finite_mask.nonzero()[:, 0].unique(sorted=True)])
+
+            for i, out in enumerate(outputs):
+                # if out.grad:
+                #     nan_mask = torch.logical_or(torch.isnan(out),torch.isnan(out.grad))
+                # else:
+                nan_mask = torch.isnan(out)
+                if nan_mask.any():
+                    raise RuntimeError(f"In + {self.__class__.__name__} Found NAN in output {i} at indices: ", nan_mask.nonzero(), "where:", out[nan_mask.nonzero()[:, 0].unique(sorted=True)])
+
+        for submodule in self.model.modules():
+            submodule.register_forward_hook(nan_hook)
+
         self.save_and_sample_every = save_and_sample_every
         self.save_model = save_model
         self.print_freq = print_freq
@@ -172,6 +210,9 @@ class Trainer(object):
 
                 writer.add_scalar("Train loss", loss, self.step)
 
+                # add clipping here
+                # torch.nn.utils.clip_grad_norm_(self.model.parameters(), .5, error_if_nonfinite=True)
+
                 loss.backward()
 
                 pbar.set_description(f'loss: {loss.item():.4f}')
@@ -182,6 +223,12 @@ class Trainer(object):
                     writer.add_scalar("loss 100", mean(loss_100), self.step)
                     writer.add_scalar("loss 500", mean(loss_500), self.step)
                     writer.add_scalar("loss 1000", mean(loss_1000), self.step)
+
+                    for name, param in self.model.named_parameters():
+                        # print(name, param.size(), param.data)
+                        writer.add_histogram("layers/"+name, param.data, self.step)
+                        writer.add_histogram("layers/"+name+".gradient", param.grad.data, self.step)
+
                     current_loss = 0
                     loss_100, loss_500, loss_1000  = [0], [0], [0]
 
