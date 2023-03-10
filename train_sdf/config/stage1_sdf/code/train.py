@@ -104,7 +104,7 @@ if __name__ == "__main__":
     arg_parser.add_argument("--cond", "-c", default=False, action='store_true', help='False for unconditional training, True for conditional training')
 
 
-    arg_parser.add_argument("--batch_size", "-b", default=4, type=int)
+    arg_parser.add_argument("--batch_size", "-b", default=1, type=int)
     arg_parser.add_argument( "--workers", "-w", default=8, type=int)
 
 

@@ -73,6 +73,8 @@ class CombinedModel(pl.LightningModule):
         # STEP 1: obtain reconstructed plane feature and latent code 
         plane_features = self.sdf_model.pointnet.get_plane_features(pc)
         original_features = torch.cat(plane_features, dim=1)
+        if(original_features.isnan().sum() > 0):
+            print("original features has nan")
         out = self.vae_model(original_features) # out = [self.decode(z), input, mu, log_var, z]
         reconstructed_plane_feature, latent = out[0], out[-1]
 
