@@ -43,7 +43,13 @@ class SdfLoader(base.Dataset):
             with tqdm(self.grid_files) as pbar:
                 for i, f in enumerate(pbar):
                     pbar.set_description("Grid files loaded: {}/{}".format(i, len(self.grid_files)))
-                    lst.append(torch.from_numpy(pd.read_csv(f, sep=',',header=None).values))
+                    data = torch.from_numpy(pd.read_csv(f, sep=',',header=None).values)
+                    #FIXME: DATA GENERATOR FOR GRID DATA SAMPLES OUTPUTS AN INVALID FIRST LINE.
+                    #FIXME: IT HAS A NAN AS IT's FIRST VALUE!!!!!
+                    data = data[1:,:]
+                    if(data.isnan().sum() > 0):
+                        raise Exception(f'file {f} has nans')
+                    lst.append(data)
             self.grid_files = lst
             
             assert len(self.grid_files) == len(self.gt_files)
@@ -55,6 +61,9 @@ class SdfLoader(base.Dataset):
         with tqdm(self.gt_files) as pbar:
             for i, f in enumerate(pbar):
                 pbar.set_description("Files loaded: {}/{}".format(i, len(self.gt_files)))
+                data = torch.from_numpy(pd.read_csv(f, sep=',',header=None).values)
+                if(data.isnan().sum() > 0):
+                    raise Exception(f"file {f} has nans in it")
                 lst.append(torch.from_numpy(pd.read_csv(f, sep=',',header=None).values))
         self.gt_files = lst
 
@@ -64,17 +73,23 @@ class SdfLoader(base.Dataset):
         near_surface_count = int(self.samples_per_mesh*0.7) if self.grid_source else self.samples_per_mesh
 
         pc, sdf_xyz, sdf_gt =  self.labeled_sampling(self.gt_files[idx], near_surface_count, self.pc_size, load_from_path=False)
+        if(sdf_xyz.isnan().sum() > 0):
+            raise Exception("found nan in dataset")
         
 
         if self.grid_source is not None:
             grid_count = self.samples_per_mesh - near_surface_count
             _, grid_xyz, grid_gt = self.labeled_sampling(self.grid_files[idx], grid_count, pc_size=0, load_from_path=False)
+            if(grid_xyz.isnan().sum() > 0):
+                raise Exception("found nan in dataset")
             # each getitem is one batch so no batch dimension, only N, 3 for xyz or N for gt 
             # for 16000 points per batch, near surface is 11200, grid is 4800
             #print("shapes: ", pc.shape,  sdf_xyz.shape, sdf_gt.shape, grid_xyz.shape, grid_gt.shape)
             sdf_xyz = torch.cat((sdf_xyz, grid_xyz))
             sdf_gt = torch.cat((sdf_gt, grid_gt))
             #print("shapes after adding grid: ", pc.shape, sdf_xyz.shape, sdf_gt.shape, grid_xyz.shape, grid_gt.shape)
+            if(sdf_xyz.isnan().sum() > 0):
+                raise Exception("found nan in dataset")
 
         data_dict = {
                     "xyz":sdf_xyz.float().squeeze(),

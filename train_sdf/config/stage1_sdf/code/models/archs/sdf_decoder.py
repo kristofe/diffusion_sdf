@@ -115,7 +115,10 @@ class ModulatedMLP(nn.Module):
 
     def pe_transform(self, data):
         pe_data = torch.cat([f(data) for f in self.pe_func], dim=-1)
+        if(pe_data.isnan().sum() > 0):
+            raise Exception("found nans")
         return pe_data
+
     def forward(self, xyz, latent):
         '''
         xyz: B, 16000, 3 (query coordinates for predicting)

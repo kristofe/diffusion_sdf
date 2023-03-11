@@ -56,18 +56,22 @@ class CombinedModel(pl.LightningModule):
                 # if out.grad:
                 #     nan_mask = torch.logical_or(torch.isnan(out),torch.isnan(out.grad))
                 # else:
-                nan_mask = torch.isnan(out)
-                if nan_mask.any():
-                    raise RuntimeError(f"In + {self.__class__.__name__} Found NAN in output {i} at indices: ", nan_mask.nonzero(), "where:", out[nan_mask.nonzero()[:, 0].unique(sorted=True)])
+                for sub_out in out:
+                    nan_mask = torch.isnan(sub_out)
+                    if nan_mask.any():
+                        print(f"In + {self.__class__.__name__} Found NAN in output {i} at indices: ", nan_mask.nonzero(), "where:", sub_out[nan_mask.nonzero()[:, 0].unique(sorted=True)])
+                        raise RuntimeError(f"In + {self.__class__.__name__} Found NAN in output {i} at indices: ", nan_mask.nonzero(), "where:", sub_out[nan_mask.nonzero()[:, 0].unique(sorted=True)])
 
-        for submodule in self.sdf_model.modules():
-            submodule.register_forward_hook(nan_hook)
+        if self.task in ('combined', 'modulation'):
+            for submodule in self.sdf_model.modules():
+                submodule.register_forward_hook(nan_hook)
+            for submodule in self.vae_model.modules():
+                submodule.register_forward_hook(nan_hook)
 
-        for submodule in self.diffusion_model.modules():
-            submodule.register_forward_hook(nan_hook)
+        if self.task in ('combined', 'diffusion'):
+            for submodule in self.diffusion_model.modules():
+                submodule.register_forward_hook(nan_hook)
 
-        for submodule in self.vae_model.modules():
-            submodule.register_forward_hook(nan_hook)
 
     def training_step(self, x, idx):
 
@@ -128,6 +132,8 @@ class CombinedModel(pl.LightningModule):
         gt = x['gt_sdf'] # (B, N)
         pc = x['point_cloud'] # (B, 1024, 3)
 
+        if(xyz.isnan().sum() > 0):
+            print("original features has nan")
         # STEP 1: obtain reconstructed plane feature and latent code 
         plane_features = self.sdf_model.pointnet.get_plane_features(pc)
         original_features = torch.cat(plane_features, dim=1)
