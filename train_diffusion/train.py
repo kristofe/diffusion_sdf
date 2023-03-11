@@ -134,8 +134,8 @@ class Trainer(object):
                 if nan_mask.any():
                     raise RuntimeError(f"In + {self.__class__.__name__} Found NAN in output {i} at indices: ", nan_mask.nonzero(), "where:", out[nan_mask.nonzero()[:, 0].unique(sorted=True)])
 
-        for submodule in self.model.modules():
-            submodule.register_forward_hook(nan_hook)
+        #for submodule in self.model.modules():
+        #    submodule.register_forward_hook(nan_hook)
 
         self.save_and_sample_every = save_and_sample_every
         self.save_model = save_model

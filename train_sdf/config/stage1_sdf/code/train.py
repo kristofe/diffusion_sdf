@@ -104,8 +104,8 @@ if __name__ == "__main__":
     arg_parser.add_argument("--cond", "-c", default=False, action='store_true', help='False for unconditional training, True for conditional training')
 
 
-    arg_parser.add_argument("--batch_size", "-b", default=1, type=int)
-    arg_parser.add_argument( "--workers", "-w", default=1, type=int)
+    arg_parser.add_argument("--batch_size", "-b", default=16, type=int)
+    arg_parser.add_argument( "--workers", "-w", default=8, type=int)
 
 
 
@@ -122,7 +122,7 @@ if __name__ == "__main__":
     args = arg_parser.parse_args()
 
     #just for debugging in VSCode 
-    os.chdir("train_sdf")
+    #os.chdir("train_sdf")
 
     specs = json.load(open(os.path.join(args.exp_dir, "specs.json")))
     print(specs["Description"])

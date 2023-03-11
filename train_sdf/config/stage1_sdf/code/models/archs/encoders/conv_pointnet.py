@@ -67,8 +67,6 @@ class ConvPointnet(nn.Module):
         # process the plane features with UNet
         if self.unet is not None:
             fea_plane = self.unet(fea_plane)
-        if(fea_plane.isnan().sum() > 0):
-            raise Exception("Nan Found") 
         return fea_plane 
 
     # takes in "p": point cloud and "query": sdf_xyz 
@@ -113,8 +111,6 @@ class ConvPointnet(nn.Module):
             fea['yz'] = self.generate_plane_features(p, c, plane='yz')
             plane_feat_sum += self.sample_plane_feature(query, fea['yz'], 'yz')
 
-        if(plane_feat_sum.isnan().sum() > 0):
-            raise Exception("Nan Found") 
         return plane_feat_sum.transpose(2,1)
 
     # given plane features with dimensions (3*dim, 64, 64)
@@ -131,8 +127,6 @@ class ConvPointnet(nn.Module):
         plane_feat_sum += self.sample_plane_feature(query, fea['xy'], 'xy')
         plane_feat_sum += self.sample_plane_feature(query, fea['yz'], 'yz')
 
-        if(plane_feat_sum.isnan().sum() > 0):
-            raise Exception("Nan Found") 
         return plane_feat_sum.transpose(2,1)
 
     # c is point cloud features
@@ -152,8 +146,6 @@ class ConvPointnet(nn.Module):
         plane_feat_sum += self.sample_plane_feature(query, fea['xy'], 'xy')
         plane_feat_sum += self.sample_plane_feature(query, fea['yz'], 'yz')
 
-        if(plane_feat_sum.isnan().sum() > 0):
-            raise Exception("Nan Found") 
         return plane_feat_sum.transpose(2,1)
 
 
@@ -174,27 +166,19 @@ class ConvPointnet(nn.Module):
             index['yz'] = self.coordinate2index(coord['yz'], self.reso_plane)
 
         net = self.fc_pos(p)
-        if(net.isnan().sum() > 0):
-            raise Exception("Nan Found")
         net = self.blocks[0](net)
         for block in self.blocks[1:]:
             pooled = self.pool_local(coord, index, net)
             net = torch.cat([net, pooled], dim=2)
             net = block(net)
-            if(net.isnan().sum() > 0):
-                raise Exception("Nan Found")
 
         c = self.fc_c(net)
-        if(c.isnan().sum() > 0):
-            raise Exception("Nan Found")
 
         return c
 
     def get_plane_features(self, p):
 
         c = self.get_point_cloud_features(p)
-        if(c.isnan().sum() > 0):
-            raise Exception("Nan Found") 
 
         fea = {}
         if 'xz' in self.plane_type:

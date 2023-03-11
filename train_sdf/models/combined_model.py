@@ -62,6 +62,8 @@ class CombinedModel(pl.LightningModule):
                         print(f"In + {self.__class__.__name__} Found NAN in output {i} at indices: ", nan_mask.nonzero(), "where:", sub_out[nan_mask.nonzero()[:, 0].unique(sorted=True)])
                         raise RuntimeError(f"In + {self.__class__.__name__} Found NAN in output {i} at indices: ", nan_mask.nonzero(), "where:", sub_out[nan_mask.nonzero()[:, 0].unique(sorted=True)])
 
+        '''
+        #Nan hooks
         if self.task in ('combined', 'modulation'):
             for submodule in self.sdf_model.modules():
                 submodule.register_forward_hook(nan_hook)
@@ -71,7 +73,7 @@ class CombinedModel(pl.LightningModule):
         if self.task in ('combined', 'diffusion'):
             for submodule in self.diffusion_model.modules():
                 submodule.register_forward_hook(nan_hook)
-
+        '''
 
     def training_step(self, x, idx):
 
@@ -132,13 +134,9 @@ class CombinedModel(pl.LightningModule):
         gt = x['gt_sdf'] # (B, N)
         pc = x['point_cloud'] # (B, 1024, 3)
 
-        if(xyz.isnan().sum() > 0):
-            print("original features has nan")
         # STEP 1: obtain reconstructed plane feature and latent code 
         plane_features = self.sdf_model.pointnet.get_plane_features(pc)
         original_features = torch.cat(plane_features, dim=1)
-        if(original_features.isnan().sum() > 0):
-            print("original features has nan")
         out = self.vae_model(original_features) # out = [self.decode(z), input, mu, log_var, z]
         reconstructed_plane_feature, latent = out[0], out[-1]
 
